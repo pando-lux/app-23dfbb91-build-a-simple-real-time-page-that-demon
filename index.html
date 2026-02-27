@@ -140,10 +140,11 @@
     }
 
     function connect() {
+      const wsUrl = `ws://${window.location.hostname}:${window.location.port || 3000}`;
       setStatus('connecting', 'Connecting…');
-      appendLog('sys', 'sys', 'Connecting to ws://localhost:3000…');
+      appendLog('sys', 'sys', `Connecting to ${wsUrl}…`);
 
-      ws = new WebSocket('ws://localhost:3000');
+      ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         setStatus('connected', 'Connected');

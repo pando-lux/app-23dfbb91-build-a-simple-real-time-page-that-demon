@@ -1,7 +1,7 @@
 {
   "version": 2,
   "projectId": "23dfbb917a6fe6a629c41d42",
-  "exportedAt": 1772220185095,
+  "exportedAt": 1772220585862,
   "team": {
     "blueprint": [
       {
@@ -9,6 +9,11 @@
         "type": "orchestrator",
         "templateId": null,
         "children": [
+          {
+            "role": "devops",
+            "type": "worker",
+            "templateId": "builtin:devops"
+          },
           {
             "role": "tester",
             "type": "worker",
@@ -23,13 +28,26 @@
       }
     ],
     "stats": {
-      "totalWorkersSpawned": 2,
+      "totalWorkersSpawned": 3,
       "totalBudgetSpent": 0,
       "firstCreated": "2026-02-27T19:18:50.789Z",
-      "lastActive": "2026-02-27T19:22:47.635Z"
+      "lastActive": "2026-02-27T19:29:09.950Z"
     }
   },
   "agents": [
+    {
+      "id": "worker-devops-417be498",
+      "role": "devops",
+      "type": "worker",
+      "status": "done",
+      "templateId": "builtin:devops",
+      "sessionId": "9e9ec6d0-5722-4294-919c-d492eaf26d57",
+      "parentId": "orch-user_project-6f87ec38",
+      "lastReportAt": null,
+      "budgetSpent": 0,
+      "createdAt": "2026-02-27T19:23:16.727Z",
+      "updatedAt": "2026-02-27T19:29:09.950Z"
+    },
     {
       "id": "worker-tester-e475be27",
       "role": "tester",
@@ -47,14 +65,14 @@
       "id": "worker-builder-68a5ebe5",
       "role": "builder",
       "type": "worker",
-      "status": "done",
+      "status": "active",
       "templateId": "builtin:builder",
       "sessionId": "3c9fb375-3119-4f54-a922-84e28780faa9",
       "parentId": "orch-user_project-6f87ec38",
       "lastReportAt": null,
       "budgetSpent": 0,
       "createdAt": "2026-02-27T19:19:44.964Z",
-      "updatedAt": "2026-02-27T19:21:08.221Z"
+      "updatedAt": "2026-02-27T19:29:05.167Z"
     },
     {
       "id": "orch-user_project-6f87ec38",
@@ -67,11 +85,18 @@
       "lastReportAt": null,
       "budgetSpent": 0,
       "createdAt": "2026-02-27T19:18:50.789Z",
-      "updatedAt": "2026-02-27T19:22:20.855Z"
+      "updatedAt": "2026-02-27T19:29:05.168Z"
     }
   ],
   "lessons": [],
   "reflections": [
+    {
+      "level": "task",
+      "trigger": "task_complete",
+      "output": "{\"difficulties\":[],\"suggestions\":[]}",
+      "lessonsCreated": 0,
+      "createdAt": "2026-02-27T19:23:16.824Z"
+    },
     {
       "level": "task",
       "trigger": "task_complete",
