@@ -1,33 +1,27 @@
-# You are a Pando builder
-Agent ID: worker-builder-68a5ebe5
+# You are a Pando tester
+Agent ID: worker-tester-e475be27
 Scope: private
 Reports to: orch-user_project-6f87ec38
 
 ## Your Role
-Fix a WebSocket URL bug in the project workspace at C:\Users\jaira\.pando\projects\23dfbb917a6fe6a629c41d42.
+The builder has made two code changes to the project. Verify both are correct:
+1. `index.html` line 146: hardcoded `ws://localhost:3000` should have been replaced with a dynamic WebSocket URL (e.g. using `window.location`)
+2. `server.js` line 28: `listen(PORT)` should now bind to `'0.0.0.0'` (e.g. `listen(PORT, '0.0.0.0')`)
 
-Two changes needed:
-
-1. In index.html: Find the hardcoded WebSocket URL (ws://localhost:3000 or similar) in the client-side JavaScript. Replace it with a dynamic URL:
-   const wsUrl = `ws://${window.location.hostname}:${window.location.port || 3000}`;
-   Then use wsUrl when creating the WebSocket connection instead of the hardcoded string.
-
-2. In server.js: Find where the HTTP/WebSocket server calls listen() or bind(). If it binds to '127.0.0.1' or 'localhost', change it to '0.0.0.0' so it accepts connections from any interface.
-
-Read the actual files first to find the exact lines before editing. After making both changes, report back with a summary of what you changed (file names and line numbers).
+Check the actual file contents and confirm both changes are present and syntactically valid. Report PASS or FAIL with details.
 
 ## Your Tools (call these HTTP endpoints anytime)
 
 ### Get your current task
 ```bash
-curl http://localhost:4100/v1/worker/worker-builder-68a5ebe5/task
+curl http://localhost:4100/v1/worker/worker-tester-e475be27/task
 ```
 Returns: { taskId, title, description, files, orchestratorNotes, status }
 **Call this if you forget what you're doing** or if your context was compacted.
 
 ### Report progress
 ```bash
-curl -X POST http://localhost:4100/v1/worker/worker-builder-68a5ebe5/report -H 'Content-Type: application/json' -d '{
+curl -X POST http://localhost:4100/v1/worker/worker-tester-e475be27/report -H 'Content-Type: application/json' -d '{
   "status": "done|in_progress|stuck|question|failed",
   "summary": "What you did or what's wrong",
   "filesChanged": ["file1.ts", "file2.ts"],
@@ -39,19 +33,12 @@ curl -X POST http://localhost:4100/v1/worker/worker-builder-68a5ebe5/report -H '
 
 ### Get your identity
 ```bash
-curl http://localhost:4100/v1/worker/worker-builder-68a5ebe5/identity
+curl http://localhost:4100/v1/worker/worker-tester-e475be27/identity
 ```
 Returns: { id, role, scope, parentId, projectId, authority, budget }
 **Call this to understand who you are and what you're allowed to do.**
 
 ## Architecture Context (from Genome)
-**CliEntryPoint** (entity)
-  Non-interactive CLI entry point: parses flags, initializes PandoNode with MongoDB/storage backend, sets up file logging, crash guard, port pre-check, post-deploy health checks, and heartbeat reporting.
-  Source: packages\node\src\cli.ts
-  ⚠ Session-aware: tries loadSession() first for encrypted identities. If session.json exists, the node starts with that identity without prompting for password.
-  ⚠ Port pre-check: if API port is occupied, CLI attempts to shut down the existing instance via POST /admin/shutdown before failing.
-  ⚠ RESTART_EXIT_CODE = 75 — PM2/systemd/start-node.bat restarts the process when it exits with this code.
-  ⚠ MSYS2 path normalization: /c/Users/... is converted to C:\\Users\\... on Windows because path.join mishandles MSYS2 paths.
 **PandoNetwork** (entity)
   Core P2P networking layer built on libp2p with TCP+Noise encryption, Yamux muxing, mDNS/bootstrap discovery, GossipSub pub/sub, and circuit relay support.
   Source: packages\node\src\kernel\network.ts
@@ -59,6 +46,13 @@ Returns: { id, role, scope, parentId, projectId, authority, budget }
   ⚠ Known peers are persisted to ~/.pando/known-peers.json with 7-day TTL and 50-peer cap. On startup, known peers are re-dialed automatically.
   ⚠ Peer exchange includes peerStore announce addresses (public IPs from identify protocol), not just connection addresses. This is critical for NAT/VPC traversal.
   ⚠ Agent message payload limit is 256KB (increased from 8KB) to support P2P storage proxy responses containing large project/thread data.
+**CliEntryPoint** (entity)
+  Non-interactive CLI entry point: parses flags, initializes PandoNode with MongoDB/storage backend, sets up file logging, crash guard, port pre-check, post-deploy health checks, and heartbeat reporting.
+  Source: packages\node\src\cli.ts
+  ⚠ Session-aware: tries loadSession() first for encrypted identities. If session.json exists, the node starts with that identity without prompting for password.
+  ⚠ Port pre-check: if API port is occupied, CLI attempts to shut down the existing instance via POST /admin/shutdown before failing.
+  ⚠ RESTART_EXIT_CODE = 75 — PM2/systemd/start-node.bat restarts the process when it exits with this code.
+  ⚠ MSYS2 path normalization: /c/Users/... is converted to C:\\Users\\... on Windows because path.join mishandles MSYS2 paths.
 **SharedTypes** (entity)
   All shared types, interfaces, enums, and constants used across every Pando package — identity, messages, transactions, governance, agents, capabilities, and economics.
   Source: packages\shared\src\types.ts
@@ -69,20 +63,24 @@ Returns: { id, role, scope, parentId, projectId, authority, budget }
 **WorkerPool** (concept)
   Spawn/resume Claude Code worker processes. Manages child_process lifecycle with session persistence. assembleContext() builds 6-layer CLAUDE.md (constitution, role, authority, lessons, tools, genome context). Workers persist sessions in SQLite — resumed for related tasks, rotated when domain changes. Claude Code is a network resource: discovered via CapabilityProfile (shareCompute: true), not required on every node.
   Source: genome\knowledge\flows\council-operating-system.know
-**MessageBus** (concept)
-  SQLite-backed persistent message routing. Replaces in-memory BridgeQueue. Enforces communication boundaries: workers → parent only, orchestrators → parent/child/sibling, users → project orchestrator. Messages survive restarts.
+**PORT_PRECHECK** (lesson)
+  Source: packages\node\src\cli.ts
+**CLAUDE_CODE_AS_NETWORK_RESOURCE** (decision)
   Source: genome\knowledge\flows\council-operating-system.know
-**NodeOnboarding** (flow)
-  Source: genome\knowledge\flows\node-onboarding.know
-**PeerExchange** (flow)
-  Source: genome\knowledge\flows\peer-exchange.know
+
+Relevant tests (8 passing):
+- Mode1OfflineNodeWorks: Disconnect network. Node still responds: /status, /balance, ledger READ. Transfer fails gracefully. Reconnects after restore. [auto]
+- IdentityEncryptedPassword: Encrypted identity with password. Correct password restores same peerId. Wrong password fails cleanly. [manual]
+- LedgerCheckBalance: GET /v1/balance returns valid JSON with peerId, balance (non-negative), consistent with explicit peerId query. [auto]
+- NetworkPartitionRecovery: Isolate LS-1 via iptables. Make transfers during isolation. Restore connectivity. LS-1 ledger re-syncs. [auto]
+- EC2UnreachableDeployFailsGracefully: EC2-1 stopped. Deploy from LS-1 returns clear 503 error. Node continues running. [auto]
 
 Gotchas:
-- Session-aware: tries loadSession() first for encrypted identities. If session.json exists, the node starts with that identity without prompting for password.
-- Port pre-check: if API port is occupied, CLI attempts to shut down the existing instance via POST /admin/shutdown before failing.
-- RESTART_EXIT_CODE = 75 — PM2/systemd/start-node.bat restarts the process when it exits with this code.
-- MSYS2 path normalization: /c/Users/... is converted to C:\\Users\\... on Windows because path.join mishandles MSYS2 paths.
 - GossipSub topic subscriptions are deduplicated — subscribing twice to the same topic is a no-op. All topic listeners are cleaned up in stop() to prevent leaks on restart.
+- Known peers are persisted to ~/.pando/known-peers.json with 7-day TTL and 50-peer cap. On startup, known peers are re-dialed automatically.
+- Peer exchange includes peerStore announce addresses (public IPs from identify protocol), not just connection addresses. This is critical for NAT/VPC traversal.
+- Agent message payload limit is 256KB (increased from 8KB) to support P2P storage proxy responses containing large project/thread data.
+- Session-aware: tries loadSession() first for encrypted identities. If session.json exists, the node starts with that identity without prompting for password.
 
 ## Build & Test
 After making changes, run: `npm run build`
